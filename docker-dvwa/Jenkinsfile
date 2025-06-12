@@ -1,0 +1,21 @@
+pipeline {
+    agent any
+    environment {
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+    }
+    stage('Deploy to Kubernetes') {
+            steps {
+                dir('k8s') {
+                    sh '''
+                    echo "Applying Kubernetes manifests..."
+                    kubectl apply -f secret.yml
+                    kubectl apply -f configmap.yml
+                    kubectl apply -f deployment-mysql.yml
+                    kubectl apply -f service-mysql.yml
+                    kubectl apply -f deployment-dvwa.yml
+                    kubectl apply -f service-dvwa.yml
+                    '''
+                }
+            }
+        }
+}
