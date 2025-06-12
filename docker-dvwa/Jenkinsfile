@@ -1,23 +1,41 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ACTION', choices: ['deploy', 'destroy'], description: 'Choose whether to deploy or destroy resources')
+    }
+
     environment {
         KUBECONFIG = '/var/lib/jenkins/.kube/config'
     }
 
     stages {
-        stage('Deploy to Kubernetes') {
+        stage('Handle Kubernetes Resources') {
             steps {
                 dir('docker-dvwa/k8s') {
-                    sh '''
-                    echo "Applying Kubernetes manifests..."
-                    kubectl apply -f secret.yml
-                    kubectl apply -f configmap.yml
-                    kubectl apply -f deployment-mysql.yml
-                    kubectl apply -f service-mysql.yml
-                    kubectl apply -f deployment-dvwa.yml
-                    kubectl apply -f service-dvwa.yml
-                    '''
+                    script {
+                        if (params.ACTION == 'deploy') {
+                            sh '''
+                            echo "Applying Kubernetes manifests..."
+                            kubectl apply -f secret.yml
+                            kubectl apply -f configmap.yml
+                            kubectl apply -f deployment-mysql.yml
+                            kubectl apply -f service-mysql.yml
+                            kubectl apply -f deployment-dvwa.yml
+                            kubectl apply -f service-dvwa.yml
+                            '''
+                        } else if (params.ACTION == 'destroy') {
+                            sh '''
+                            echo "Deleting Kubernetes manifests..."
+                            kubectl delete -f service-dvwa.yml --ignore-not-found
+                            kubectl delete -f deployment-dvwa.yml --ignore-not-found
+                            kubectl delete -f service-mysql.yml --ignore-not-found
+                            kubectl delete -f deployment-mysql.yml --ignore-not-found
+                            kubectl delete -f configmap.yml --ignore-not-found
+                            kubectl delete -f secret.yml --ignore-not-found
+                            '''
+                        }
+                    }
                 }
             }
         }
