@@ -6,40 +6,46 @@ pipeline {
     }
 
     environment {
-    AWS_REGION = 'ap-south-1'
-    CLUSTER_NAME = 'test-cluster'
-  }
+        AWS_REGION = 'ap-south-1'
+        CLUSTER_NAME = 'test-cluster'
+    }
 
     stages {
         stage('Update kubeconfig') {
-      steps {
-        sh '''
-          aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
-        '''
-      }
+            steps {
+                sh '''
+                    echo "Updating kubeconfig for EKS cluster..."
+                    aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+                '''
+            }
+        }
+
         stage('Handle Kubernetes Resources') {
             steps {
+                script {
+                    echo "Selected ACTION: ${params.ACTION}"
+                }
                 dir('docker-dvwa/k8s') {
                     script {
                         if (params.ACTION == 'deploy') {
                             sh '''
-                            echo "Applying Kubernetes manifests..."
-                            kubectl apply -f secret.yml
-                            kubectl apply -f configmap.yml
-                            kubectl apply -f deployment-mysql.yml
-                            kubectl apply -f service-mysql.yml
-                            kubectl apply -f deployment-dvwa.yml
-                            kubectl apply -f service-dvwa.yml
+                                echo "Applying Kubernetes manifests..."
+                                kubectl apply -f secret.yml
+                                kubectl apply -f configmap.yml
+                                kubectl apply -f deployment-mysql.yml
+                                kubectl apply -f service-mysql.yml
+                                kubectl apply -f deployment-dvwa.yml
+                                kubectl apply -f service-dvwa.yml
                             '''
                         } else if (params.ACTION == 'destroy') {
                             sh '''
-                            echo "Deleting Kubernetes manifests..."
-                            kubectl delete -f service-dvwa.yml --ignore-not-found
-                            kubectl delete -f deployment-dvwa.yml --ignore-not-found
-                            kubectl delete -f service-mysql.yml --ignore-not-found
-                            kubectl delete -f deployment-mysql.yml --ignore-not-found
-                            kubectl delete -f configmap.yml --ignore-not-found
-                            kubectl delete -f secret.yml --ignore-not-found
+                                echo "Deleting Kubernetes manifests..."
+                                kubectl delete -f service-dvwa.yml --ignore-not-found
+                                kubectl delete -f deployment-dvwa.yml --ignore-not-found
+                                kubectl delete -f service-mysql.yml --ignore-not-found
+                                kubectl delete -f deployment-mysql.yml --ignore-not-found
+                                kubectl delete -f configmap.yml --ignore-not-found
+                                kubectl delete -f secret.yml --ignore-not-found
                             '''
                         }
                     }
